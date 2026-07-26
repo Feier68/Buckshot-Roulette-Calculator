@@ -1,0 +1,3 @@
+## 2024-05-17 - Expanding Click Targets and Dynamic Announcements
+**Learning:** In custom UI controls like toggles, the clickable area is often restricted to just the switch itself. Using a `<label>` to wrap both the text description and the toggle (or explicitly linking them via `for`) dramatically improves usability by expanding the click target. Additionally, pure JS UI updates (like incrementing a counter) are invisible to screen readers without `aria-live="polite"` which queues announcements of the updated values dynamically.
+**Action:** Always wrap text descriptions of form controls in `<label>` elements linked to the input, and always use `aria-live` regions for any dynamic text that updates based on user interaction in SPAs.

@@ -102,14 +102,14 @@
         </div>
 
         <div class="glass-card flex items-center justify-between px-5 py-3 rounded-full border-zinc-800">
-            <div class="flex items-center gap-2">
+            <label for="strategy-toggle" class="flex items-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider" data-i18n="strat_mode">Strategy Mode</span>
-            </div>
+            </label>
             
             <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="strategy-toggle" class="sr-only peer" onchange="toggleStrategy()">
-                <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
             </label>
         </div>
 
@@ -186,13 +186,13 @@
             <div class="flex flex-col items-center gap-3">
                 <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500" data-i18n="live">Live</span>
                 <div class="flex items-center gap-3">
-                    <button onclick="update('live', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
+                    <button aria-label="Decrease Live Rounds" onclick="update('live', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
                     
                     <div class="w-16 h-20 bg-[#961b1b] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(220,38,38,0.3)] border border-red-900/50">
-                        <span id="count-live" class="text-4xl font-bold text-white">0</span>
+                        <span id="count-live" aria-live="polite" class="text-4xl font-bold text-white">0</span>
                     </div>
 
-                    <button onclick="update('live', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
+                    <button aria-label="Increase Live Rounds" onclick="update('live', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
                 </div>
                 <div id="indicators-live" class="flex gap-1 h-2 mt-1 opacity-50"></div>
             </div>
@@ -200,13 +200,13 @@
             <div class="flex flex-col items-center gap-3">
                 <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500" data-i18n="blank">Blank</span>
                 <div class="flex items-center gap-3">
-                    <button onclick="update('blank', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
+                    <button aria-label="Decrease Blank Rounds" onclick="update('blank', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
                     
                     <div class="w-16 h-20 bg-[#3f3f46] rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(100,100,100,0.2)] border border-zinc-700/50">
-                        <span id="count-blank" class="text-4xl font-bold text-white">0</span>
+                        <span id="count-blank" aria-live="polite" class="text-4xl font-bold text-white">0</span>
                     </div>
 
-                    <button onclick="update('blank', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
+                    <button aria-label="Increase Blank Rounds" onclick="update('blank', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
                 </div>
                 <div id="indicators-blank" class="flex gap-1 h-2 mt-1 opacity-50"></div>
             </div>
