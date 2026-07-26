@@ -356,6 +356,23 @@
             }
         };
 
+        // --- CACHED DOM ELEMENTS FOR PERFORMANCE ---
+        // ⚡ Bolt: Cache DOM elements to prevent redundant lookups on each render/interaction
+        const DOM_strategyToggle = document.getElementById('strategy-toggle');
+        const DOM_strategyExtras = document.getElementById('strategy-extras');
+        const DOM_ammoWarning = document.getElementById('ammo-warning');
+        const DOM_countLive = document.getElementById('count-live');
+        const DOM_countBlank = document.getElementById('count-blank');
+        const DOM_mainPercent = document.getElementById('main-percent');
+        const DOM_statusText = document.getElementById('status-text');
+        const DOM_statLive = document.getElementById('stat-live');
+        const DOM_statBlank = document.getElementById('stat-blank');
+        const DOM_gaugeArc = document.getElementById('gauge-arc');
+        const DOM_needle = document.getElementById('needle');
+        const DOM_strategyText = document.getElementById('strategy-text');
+        const DOM_indicatorsLive = document.getElementById('indicators-live');
+        const DOM_indicatorsBlank = document.getElementById('indicators-blank');
+
         let currentLang = 'de';
         let live = 0;
         let blank = 0;
@@ -374,14 +391,13 @@
         }
 
         function toggleStrategy() {
-            const isChecked = document.getElementById('strategy-toggle').checked;
-            const extraCards = document.getElementById('strategy-extras');
+            const isChecked = DOM_strategyToggle.checked;
             if (isChecked) {
-                extraCards.classList.remove('hidden');
-                extraCards.classList.add('flex');
+                DOM_strategyExtras.classList.remove('hidden');
+                DOM_strategyExtras.classList.add('flex');
             } else {
-                extraCards.classList.add('hidden');
-                extraCards.classList.remove('flex');
+                DOM_strategyExtras.classList.add('hidden');
+                DOM_strategyExtras.classList.remove('flex');
             }
         }
 
@@ -406,10 +422,9 @@
         }
 
         function showWarning() {
-            const warning = document.getElementById('ammo-warning');
-            warning.innerText = t('msg_empty');
-            warning.classList.remove('hidden');
-            setTimeout(() => warning.classList.add('hidden'), 1000);
+            DOM_ammoWarning.innerText = t('msg_empty');
+            DOM_ammoWarning.classList.remove('hidden');
+            setTimeout(() => DOM_ammoWarning.classList.add('hidden'), 1000);
         }
 
         function reset() {
@@ -419,19 +434,16 @@
         }
 
         function render() {
-            document.getElementById('count-live').innerText = live;
-            document.getElementById('count-blank').innerText = blank;
+            DOM_countLive.innerText = live;
+            DOM_countBlank.innerText = blank;
 
             const total = live + blank;
             const liveProb = total === 0 ? 0 : (live / total) * 100;
             const blankProb = total === 0 ? 0 : (blank / total) * 100;
 
-            const mainText = document.getElementById('main-percent');
-            const statusText = document.getElementById('status-text');
-            
-            mainText.innerHTML = `${liveProb.toFixed(1)}<span class="text-2xl">%</span>`;
-            document.getElementById('stat-live').innerText = `${liveProb.toFixed(1)}%`;
-            document.getElementById('stat-blank').innerText = `${blankProb.toFixed(1)}%`;
+            DOM_mainPercent.innerHTML = `${liveProb.toFixed(1)}<span class="text-2xl">%</span>`;
+            DOM_statLive.innerText = `${liveProb.toFixed(1)}%`;
+            DOM_statBlank.innerText = `${blankProb.toFixed(1)}%`;
 
             let statusKey = "status_safe";
             let colorClass = "text-emerald-400";
@@ -449,20 +461,19 @@
                 statusKey = "status_risky"; colorClass = "text-amber-400"; colorHex = "#f59e0b";
             }
 
-            mainText.className = `text-5xl font-black ${colorClass}`;
-            statusText.innerText = t(statusKey);
-            statusText.className = `text-[10px] font-bold uppercase tracking-widest mt-1 ${colorClass}`;
+            DOM_mainPercent.className = `text-5xl font-black ${colorClass}`;
+            DOM_statusText.innerText = t(statusKey);
+            DOM_statusText.className = `text-[10px] font-bold uppercase tracking-widest mt-1 ${colorClass}`;
             
-            document.getElementById('gauge-arc').setAttribute('stroke', colorHex);
+            DOM_gaugeArc.setAttribute('stroke', colorHex);
             
             const rotation = -90 + (liveProb / 100) * 180;
-            document.getElementById('needle').style.transform = `rotate(${rotation}deg)`;
+            DOM_needle.style.transform = `rotate(${rotation}deg)`;
             
             const pathLength = 251.2;
             const offset = pathLength - (pathLength * (liveProb / 100));
-            document.getElementById('gauge-arc').style.strokeDashoffset = offset;
+            DOM_gaugeArc.style.strokeDashoffset = offset;
 
-            const stratText = document.getElementById('strategy-text');
             let stratKey = "strat_setup";
 
             if(total === 0) stratKey = "strat_setup";
@@ -472,14 +483,14 @@
             else if(blank > live) stratKey = "strat_good_chance";
             else stratKey = "strat_equal";
 
-            stratText.innerText = t(stratKey);
+            DOM_strategyText.innerText = t(stratKey);
 
             const makeDots = (cnt, color) => Array(8).fill(0).map((_, i) => 
                 `<div class="w-1.5 h-1.5 rounded-full transition-all ${i < cnt ? color : 'bg-zinc-800/60'}"></div>`
             ).join('');
             
-            document.getElementById('indicators-live').innerHTML = makeDots(live, 'bg-red-600');
-            document.getElementById('indicators-blank').innerHTML = makeDots(blank, 'bg-zinc-500');
+            DOM_indicatorsLive.innerHTML = makeDots(live, 'bg-red-600');
+            DOM_indicatorsBlank.innerHTML = makeDots(blank, 'bg-zinc-500');
         }
 
         // Init
