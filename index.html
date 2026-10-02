@@ -4,220 +4,295 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buckshot Roulette Calc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* === BUCKSHOT ATMOSPHERE CSS === */
-        body { 
-            background-color: #0a0707; /* Sehr tiefes, warmes Schwarz */
-            color: #e4e4e7; /* Leicht abgetöntes Weiß für Retro-Look */
-            font-family: 'Arial', sans-serif; 
+        :root {
+            --room: #0d0b0a;      /* das dunkle Hinterzimmer */
+            --table: #23271f;     /* abgenutzte Tischplatte */
+            --live: #b8322a;      /* scharfe Hülse */
+            --blank: #3f6e9e;     /* Platzpatrone (blau wie im Spiel) */
+            --brass: #c8a24b;     /* Messingboden */
+            --ink: #d6d3cd;
+            --ink-dim: #8a857c;
+            --phos: #8cff9e;      /* Defi-Display, wird je nach Gefahr umgefärbt */
+        }
+
+        body {
+            background-color: var(--room);
+            color: var(--ink);
+            font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
             overflow-x: hidden;
-            /* Subtiles, dreckiges Industriegitter-Muster */
-            background-image: 
-                linear-gradient(rgba(100, 100, 100, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(100, 100, 100, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
         }
 
-        /* Starke Vignette für klaustrophobischen Fokus */
-        .bg-vignette {
+        /* Eine einzelne Lampe über dem Tisch */
+        .room-lamp {
             position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background: radial-gradient(circle at 50% 40%, transparent 20%, rgba(0, 0, 0, 0.95) 90%);
+            background:
+                radial-gradient(ellipse 70% 55% at 50% 38%, rgba(255, 214, 160, 0.10), transparent 70%),
+                radial-gradient(ellipse 120% 90% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+        }
+        /* Körniger Dreck statt Raster */
+        .room-grain {
+            position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.09; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
-        /* Dreckiges rotes Industrielicht */
-        .bg-atmosphere {
-            position: fixed; inset: 0; z-index: 1; pointer-events: none;
-            background: 
-                radial-gradient(circle at 50% 0%, rgba(220, 30, 30, 0.2), transparent 70%), /* Licht von oben */
-                radial-gradient(circle at 20% 80%, rgba(80, 20, 20, 0.1), transparent 50%); /* Schmutz unten */
-            mix-blend-mode: hard-light;
+        .title {
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            line-height: 0.85;
+            color: var(--live);
+            text-shadow: 0 0 24px rgba(184, 50, 42, 0.45);
         }
 
-        /* CRT Scanlines für den Monitor-Look */
-        .bg-scanlines {
-            position: fixed; inset: 0; z-index: 2; pointer-events: none;
-            background: repeating-linear-gradient(
-                to bottom,
-                transparent 0px,
-                transparent 3px,
-                rgba(0, 0, 0, 0.2) 3px,
-                rgba(0, 0, 0, 0.4) 6px
-            );
-            opacity: 0.6;
+        /* === Defibrillator-Display === */
+        .bezel {
+            background: linear-gradient(180deg, #2a2b28, #1a1b19);
+            border: 1px solid #3a3b37;
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 2px 0 rgba(255,255,255,0.04) inset, 0 20px 40px -12px rgba(0,0,0,0.9);
         }
-        /* === ENDE ATMOSPHERE CSS === */
+        .screen {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: radial-gradient(ellipse at 50% 40%, #0b1d10, #040a06 80%);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(0,0,0,0.8);
+            font-family: 'VT323', monospace;
+            color: var(--phos);
+            text-shadow: 0 0 6px color-mix(in srgb, var(--phos) 70%, transparent);
+            transition: color 0.4s ease;
+        }
+        .screen::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,0.35) 2px 3px);
+        }
+        .screen .dim { opacity: 0.55; }
+        .segment {
+            flex: 1; height: 14px; border-radius: 1px;
+            background: color-mix(in srgb, var(--phos) 10%, transparent);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .segment.on {
+            background: var(--phos);
+            box-shadow: 0 0 6px color-mix(in srgb, var(--phos) 80%, transparent);
+        }
+        @keyframes flash-live { 0% { background-color: rgba(255, 60, 40, 0.55); } 100% { background-color: transparent; } }
+        .screen .flash { position: absolute; inset: 0; pointer-events: none; }
+        .screen .flash.go { animation: flash-live 0.5s ease-out; }
 
+        /* Kippschalter für den Strategie-Modus */
+        .switch { position: relative; width: 44px; height: 24px; flex: none; }
+        .switch input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+        .switch .track {
+            position: absolute; inset: 0; border-radius: 999px; background: #0e0f0d;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); border: 1px solid #3a3b37; transition: background 0.2s;
+        }
+        .switch .knob {
+            position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+            background: linear-gradient(180deg, #8a857c, #4a4741); transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+        .switch input:checked ~ .track { background: #1d3a24; }
+        .switch input:checked ~ .knob { transform: translateX(20px); background: linear-gradient(180deg, #c6ffd0, var(--phos)); }
+        .switch input:focus-visible ~ .track { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-        /* Titel Glow - etwas aggressiver */
-        .title-glow {
-            text-shadow: 0 0 15px rgba(220, 38, 38, 0.8), 0 0 30px rgba(220, 38, 38, 0.4);
+        /* === Tisch mit Patronen === */
+        .table-top {
+            position: relative;
+            border-radius: 22px;
+            background:
+                radial-gradient(ellipse 80% 90% at 50% 0%, rgba(255, 214, 160, 0.16), transparent 70%),
+                var(--table);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.75), 0 24px 40px -18px rgba(0,0,0,0.9);
+            border: 1px solid #30352b;
         }
 
-        /* Karten Design - Angepasst an den dunkleren Hintergrund */
-        .glass-card {
-            background-color: rgba(20, 20, 24, 0.9); /* Dunkler und weniger transparent */
-            border: 1px solid #3f3f46;
-            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.9); /* Stärkerer Schatten */
-            transition: all 0.3s ease;
+        .shell {
+            width: 36px; height: 100px;
+            display: flex; flex-direction: column;
+            border-radius: 8px 8px 3px 3px;
+            transition: transform 0.25s ease, filter 0.3s ease;
+            cursor: pointer;
         }
-        
-        /* Nadel */
-        .needle { transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: 100px 80px; }
+        .shell .hull {
+            flex: 1;
+            border-radius: 8px 8px 0 0;
+            background:
+                linear-gradient(90deg, rgba(0,0,0,0.5), rgba(255,255,255,0.2) 32%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.55)),
+                repeating-linear-gradient(0deg, transparent 0 5px, rgba(0,0,0,0.13) 5px 6px),
+                var(--hull);
+            box-shadow: inset 0 4px 0 rgba(0,0,0,0.35);
+            transition: background-color 0.3s ease;
+        }
+        .shell .base {
+            height: 22px;
+            border-radius: 0 0 3px 3px;
+            border-top: 2px solid #7a5f25;
+            background: linear-gradient(90deg, #5c461b, #e9ca74 34%, #b8913f 58%, #4e3b16);
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3);
+        }
+        .shell.unknown { filter: saturate(0.85) brightness(0.8); }
+        .shell.current { transform: translateY(-8px); filter: drop-shadow(0 0 12px rgba(255, 214, 160, 0.35)); }
+        .shell.unknown.current { filter: saturate(0.85) brightness(0.95) drop-shadow(0 0 12px rgba(255, 214, 160, 0.35)); }
+        .shell:hover { transform: translateY(-3px); }
+        .shell.current:hover { transform: translateY(-10px); }
+        .shell:focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; }
 
-        /* Buttons */
-        .btn-circle:active { transform: scale(0.95); background-color: #27272a; }
-        .btn-outcome:active { transform: scale(0.98); }
-        
-        /* Toggle Switch */
-        .toggle-checkbox:checked { right: 0; border-color: #fff; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #9333ea; }
+        /* Physische Knöpfe */
+        .key {
+            background: linear-gradient(180deg, #2b2c29, #1c1d1b);
+            border: 1px solid #3a3b37;
+            box-shadow: 0 3px 0 #0a0a09, inset 0 1px 0 rgba(255,255,255,0.06);
+            color: var(--ink);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s;
+        }
+        .key:hover { background: linear-gradient(180deg, #33342f, #222320); }
+        .key:active { transform: translateY(2px); box-shadow: 0 1px 0 #0a0a09, inset 0 1px 0 rgba(255,255,255,0.04); }
+        .key:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+        .key:disabled { opacity: 0.35; pointer-events: none; }
+        .key-live { background: linear-gradient(180deg, #7a231d, #521813); border-color: #8f2e26; }
+        .key-live:hover { background: linear-gradient(180deg, #8a2a22, #5e1c16); }
+        .key-blank { background: linear-gradient(180deg, #2c4c6e, #1d344d); border-color: #3a5f86; }
+        .key-blank:hover { background: linear-gradient(180deg, #34587f, #223c58); }
+        .key-on { box-shadow: 0 3px 0 #0a0a09, 0 0 0 2px var(--brass); }
+
+        kbd {
+            font-family: 'VT323', monospace; font-size: 15px; line-height: 1;
+            padding: 2px 6px; border-radius: 4px; border: 1px solid #3a3b37; background: #1a1b19; color: var(--ink);
+        }
+
+        select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-6 px-4 relative">
+<body class="min-h-screen relative">
 
-    <div class="bg-vignette"></div>
-    <div class="bg-atmosphere"></div>
-    <div class="bg-scanlines"></div>
+    <div class="room-lamp"></div>
+    <div class="room-grain"></div>
 
-    <div class="absolute top-4 right-4 z-50 opacity-80 hover:opacity-100 transition-opacity">
-        <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-zinc-900 border border-zinc-700 text-zinc-300 text-[10px] font-bold uppercase tracking-wider rounded py-1 px-2 focus:outline-none focus:border-red-800 cursor-pointer hover:bg-zinc-800">
-                       
-		    <option value="en">🇬🇧 EN</option>
-		    <option value="de">🇩🇪 DE</option>
-            <option value="es">🇪🇸 ES</option>
-            <option value="fr">🇫🇷 FR</option>
-            <option value="it">🇮🇹 IT</option>
-            <option value="ru">🇷🇺 RU</option>
-        </select>
-    </div>
+    <main class="relative z-10 w-full max-w-[420px] mx-auto px-4 pt-6 pb-10 flex flex-col gap-6">
 
-    <div class="relative z-10 w-full max-w-[400px] flex flex-col gap-5">
+        <header class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="title text-[44px] uppercase">Buckshot<br>Roulette</h1>
+                <p class="text-[15px] text-[color:var(--ink-dim)] mt-2 font-medium" data-i18n="subtitle">Probability Calculator</p>
+            </div>
+            <select id="lang-select" onchange="changeLanguage(this.value)" aria-label="Language"
+                class="mt-1 bg-[#1a1b19] border border-[#3a3b37] text-[color:var(--ink)] text-sm font-semibold rounded-md py-1 px-2 cursor-pointer">
+                <option value="en">EN</option>
+                <option value="de">DE</option>
+                <option value="es">ES</option>
+                <option value="fr">FR</option>
+                <option value="it">IT</option>
+                <option value="ru">RU</option>
+            </select>
+        </header>
 
-        <div class="text-center space-y-2 mt-4">
-            <h1 class="text-4xl sm:text-5xl font-black tracking-tighter uppercase text-red-600 title-glow" style="font-family: 'Arial Black', sans-serif;">
-                Buckshot<br>Roulette
-            </h1>
-            <p class="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold" data-i18n="subtitle">Probability Calculator</p>
-        </div>
-
-        <div class="glass-card flex items-center justify-between px-5 py-3 rounded-full border-zinc-800">
-            <label for="strategy-toggle" class="flex items-center gap-2 cursor-pointer">
-                <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider" data-i18n="strat_mode">Strategy Mode</span>
+        <!-- Defibrillator-Display -->
+        <section class="bezel" aria-live="polite">
+            <div id="screen" class="screen px-4 pt-3 pb-4">
+                <div id="flash" class="flash"></div>
+                <div class="flex items-baseline justify-between text-xl leading-none">
+                    <span class="dim" data-i18n="next_shot">Next Shot</span>
+                    <span id="status-text">SETUP</span>
+                </div>
+                <div class="flex items-end justify-between mt-1">
+                    <div id="main-percent" class="text-[84px] leading-[0.9] tabular-nums">0.0%</div>
+                    <div id="inverted-badge" class="hidden text-lg leading-none mb-3">⇄ <span data-i18n="inverted">Inverted</span></div>
+                </div>
+                <div id="segments" class="flex gap-[3px] mt-2"></div>
+                <div class="flex justify-between text-lg leading-none mt-2">
+                    <span><span data-i18n="live">Live</span> <span id="stat-live">0.0%</span></span>
+                    <span class="dim"><span data-i18n="blank">Blank</span> <span id="stat-blank">0.0%</span></span>
+                </div>
+                <div id="advice-line" class="hidden mt-3 pt-2 border-t border-current/20 text-lg leading-tight" style="border-color: color-mix(in srgb, var(--phos) 25%, transparent);">
+                    &gt; <span id="strategy-text">...</span>
+                </div>
+                <div id="ammo-warning" class="hidden mt-2 text-lg leading-none" style="color:#ff6a5c">! <span id="ammo-warning-text"></span></div>
+            </div>
+            <label class="flex items-center justify-between px-2 pt-3 cursor-pointer">
+                <span class="text-[15px] font-semibold text-[color:var(--ink-dim)]" data-i18n="strat_mode">Strategy Mode</span>
+                <span class="switch">
+                    <input type="checkbox" id="strategy-toggle" onchange="toggleStrategy()">
+                    <span class="track"></span>
+                    <span class="knob"></span>
+                </span>
             </label>
-            
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="strategy-toggle" class="sr-only peer" onchange="toggleStrategy()">
-                <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-            </label>
-        </div>
+        </section>
 
-        <div class="glass-card rounded-3xl p-6 pt-8 pb-8 relative overflow-hidden">
-            
-            <div class="relative w-48 h-24 mx-auto mb-2">
-                <svg class="w-full h-full overflow-visible" viewBox="0 0 200 100">
-                    <path d="M 20 80 A 80 80 0 0 1 180 80" fill="none" stroke="#27272a" stroke-width="12" stroke-linecap="round" />
-                    
-                    <defs>
-                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <path id="gauge-arc" d="M 20 80 A 80 80 0 0 1 180 80" fill="none" stroke="url(#grad1)" stroke-width="12" stroke-linecap="round" 
-                          stroke-dasharray="251.2" stroke-dashoffset="251.2" class="transition-all duration-700 ease-out" />
-                    
-                    <g id="needle" class="needle">
-                        <line x1="100" y1="80" x2="100" y2="25" stroke="white" stroke-width="4" stroke-linecap="round" />
-                        <circle cx="100" cy="80" r="6" fill="white" />
-                    </g>
-                </svg>
-                
-                <div class="absolute inset-x-0 bottom-0 text-center translate-y-4">
-                    <div class="text-[10px] uppercase tracking-widest mb-1 text-zinc-500" data-i18n="next_shot">Next Shot</div>
-                    <div id="main-percent" class="text-5xl font-black text-emerald-400">0.0<span class="text-2xl">%</span></div>
-                    <div id="status-text" class="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mt-1">SAFE</div>
-                </div>
-            </div>
+        <!-- Tisch: Patronen in Reihenfolge, die vorderste ist die nächste -->
+        <section class="table-top px-3 pt-6 pb-4">
+            <div id="magazine" class="flex justify-center gap-1.5 min-h-[146px] items-end"></div>
+            <p id="table-empty" class="absolute inset-0 flex items-center justify-center text-center px-8 text-lg text-[color:var(--ink-dim)]" data-i18n="strat_setup">Load rounds to begin.</p>
+            <p id="mag-hint" class="text-center text-[13px] leading-snug text-[color:var(--ink-dim)] mt-4 max-w-[30ch] mx-auto" data-i18n="mag_hint">Tap a shell to mark it as known</p>
+        </section>
 
-            <div class="grid grid-cols-2 gap-4 mt-10">
-                <div class="bg-[#1a0f0f] border border-red-900/40 rounded-xl p-3 text-center shadow-lg">
-                    <div class="text-sm font-bold text-white mb-1">🔴 <span id="stat-live">0.0%</span></div>
-                    <div class="text-[10px] uppercase text-red-400/60 font-bold" data-i18n="live">Live</div>
-                </div>
-                <div class="bg-[#121216] border border-zinc-800/60 rounded-xl p-3 text-center shadow-lg">
-                    <div class="text-sm font-bold text-white mb-1">🛡️ <span id="stat-blank">0.0%</span></div>
-                    <div class="text-[10px] uppercase text-zinc-500 font-bold" data-i18n="blank">Blank</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="strategy-extras" class="hidden flex-col gap-4">
-            
-            <div class="glass-card rounded-2xl p-4">
-                <div class="text-center mb-3">
-                    <span class="text-[10px] uppercase tracking-widest text-zinc-400 font-bold" data-i18n="shot_outcome">Shot Outcome</span>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="shoot('live')" class="btn-outcome h-16 rounded-xl bg-red-950/40 border border-red-900/50 hover:bg-red-900/40 hover:border-red-500/50 flex flex-col items-center justify-center gap-1 transition-all shadow-md">
-                        <span class="text-xl">💥</span>
-                        <span class="text-[10px] font-bold text-red-400 uppercase" data-i18n="live">Live</span>
-                    </button>
-                    <button onclick="shoot('blank')" class="btn-outcome h-16 rounded-xl bg-zinc-900/40 border border-zinc-700/50 hover:bg-zinc-800/40 hover:border-zinc-500/50 flex flex-col items-center justify-center gap-1 transition-all shadow-md">
-                        <span class="text-xl">💨</span>
-                        <span class="text-[10px] font-bold text-zinc-400 uppercase" data-i18n="blank">Blank</span>
-                    </button>
-                </div>
-                <div id="ammo-warning" class="hidden text-center text-[10px] text-red-500 mt-2 uppercase tracking-wide font-bold" data-i18n="msg_empty">Magazin Leer</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 border-l-2 border-purple-700">
-                <div class="flex items-center gap-2 mb-2">
-                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                    <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest" data-i18n="analysis">Analysis</span>
-                </div>
-                <p id="strategy-text" class="text-xs text-zinc-300 font-medium leading-relaxed shadow-sm">...</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-8 px-2">
-            
-            <div class="flex flex-col items-center gap-3">
-                <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500" data-i18n="live">Live</span>
+        <!-- Patronen laden -->
+        <section class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col items-center gap-2">
+                <span class="text-[15px] font-semibold flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--live)"></span>
+                    <span data-i18n="live">Live</span>
+                </span>
                 <div class="flex items-center gap-3">
-                    <button aria-label="Decrease Live Rounds" onclick="update('live', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
-                    
-                    <div class="w-16 h-20 bg-[#961b1b] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(220,38,38,0.3)] border border-red-900/50">
-                        <span id="count-live" aria-live="polite" class="text-4xl font-bold text-white">0</span>
-                    </div>
-
-                    <button aria-label="Increase Live Rounds" onclick="update('live', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
+                    <button type="button" onclick="update('live', -1)" aria-label="Live −1" class="key w-11 h-11 rounded-lg text-2xl font-bold">−</button>
+                    <span id="count-live" aria-live="polite" class="w-10 text-center text-5xl font-extrabold tabular-nums" style="color:#e05a4f">0</span>
+                    <button type="button" onclick="update('live', 1)" aria-label="Live +1" class="key w-11 h-11 rounded-lg text-2xl font-bold">+</button>
                 </div>
-                <div id="indicators-live" class="flex gap-1 h-2 mt-1 opacity-50"></div>
             </div>
-
-            <div class="flex flex-col items-center gap-3">
-                <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500" data-i18n="blank">Blank</span>
+            <div class="flex flex-col items-center gap-2">
+                <span class="text-[15px] font-semibold flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--blank)"></span>
+                    <span data-i18n="blank">Blank</span>
+                </span>
                 <div class="flex items-center gap-3">
-                    <button aria-label="Decrease Blank Rounds" onclick="update('blank', -1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">-</button>
-                    
-                    <div class="w-16 h-20 bg-[#3f3f46] rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(100,100,100,0.2)] border border-zinc-700/50">
-                        <span id="count-blank" aria-live="polite" class="text-4xl font-bold text-white">0</span>
-                    </div>
-
-                    <button aria-label="Increase Blank Rounds" onclick="update('blank', 1)" class="btn-circle w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600 transition flex items-center justify-center font-bold text-lg shadow-sm">+</button>
+                    <button type="button" onclick="update('blank', -1)" aria-label="Blank −1" class="key w-11 h-11 rounded-lg text-2xl font-bold">−</button>
+                    <span id="count-blank" aria-live="polite" class="w-10 text-center text-5xl font-extrabold tabular-nums" style="color:#7fa6cf">0</span>
+                    <button type="button" onclick="update('blank', 1)" aria-label="Blank +1" class="key w-11 h-11 rounded-lg text-2xl font-bold">+</button>
                 </div>
-                <div id="indicators-blank" class="flex gap-1 h-2 mt-1 opacity-50"></div>
             </div>
-        </div>
+        </section>
 
-        <button onclick="reset()" class="w-full py-4 mt-2 rounded-xl border border-zinc-800 bg-zinc-900/70 hover:bg-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-[0.2em] transition flex items-center justify-center gap-2 shadow-md btn-circle">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span data-i18n="new_round">New Round</span>
-        </button>
+        <!-- Strategie: Ergebnisse eintragen -->
+        <section id="strategy-extras" class="hidden flex-col gap-3">
+            <h2 class="text-[15px] font-semibold text-[color:var(--ink-dim)]" data-i18n="shot_outcome">Shot Outcome</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="shoot('live')" class="key key-live h-16 rounded-xl text-2xl font-bold" data-i18n="live">Live</button>
+                <button type="button" onclick="shoot('blank')" class="key key-blank h-16 rounded-xl text-2xl font-bold" data-i18n="blank">Blank</button>
+            </div>
+            <p class="text-[13px] text-[color:var(--ink-dim)] -mt-1" data-i18n="beer_hint">Also use this after Beer</p>
+            <button type="button" id="inverter-btn" onclick="toggleInverter()" class="key h-12 rounded-xl text-lg font-bold flex items-center justify-center gap-2">
+                <span aria-hidden="true">⇄</span> <span data-i18n="inverter">Inverter</span>
+            </button>
+        </section>
 
-    </div>
+        <section class="grid grid-cols-[1fr_1.6fr] gap-3">
+            <button type="button" id="undo-btn" onclick="undo()" class="key h-12 rounded-xl text-lg font-semibold flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a5 5 0 015 5v2M3 10l5-5M3 10l5 5"></path></svg>
+                <span data-i18n="undo">Undo</span>
+            </button>
+            <button type="button" onclick="reset()" class="key h-12 rounded-xl text-lg font-semibold flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span data-i18n="new_round">New Round</span>
+            </button>
+        </section>
+
+        <p class="hidden sm:flex flex-wrap justify-center gap-x-4 gap-y-2 text-[14px] text-[color:var(--ink-dim)]">
+            <span><kbd>L</kbd> <span data-i18n="live">Live</span></span>
+            <span><kbd>B</kbd> <span data-i18n="blank">Blank</span></span>
+            <span><kbd>I</kbd> <span data-i18n="inverter">Inverter</span></span>
+            <span><kbd>Z</kbd> <span data-i18n="undo">Undo</span></span>
+        </p>
+
+    </main>
 
     <script>
         // --- SPRACH DATENBANK ---
@@ -231,18 +306,28 @@
                 shot_outcome: "Ergebnis eintragen",
                 analysis: "Analyse",
                 new_round: "Neue Runde",
+                undo: "Rückgängig",
+                magazine: "Magazin",
+                mag_hint: "Tippe eine Patrone an, um sie als bekannt zu markieren (Lupe / Wegwerfhandy)",
+                items: "Items",
+                inverter: "Inverter",
+                inverted: "Invertiert",
+                beer_hint: "Auch nach Bier benutzen (ausgeworfene Patrone)",
                 msg_empty: "Magazin leer!",
+                msg_conflict: "Passt nicht zu den Zahlen!",
                 status_safe: "SICHER",
                 status_deadly: "TÖDLICH",
                 status_danger: "GEFAHR",
                 status_risky: "RISIKO",
                 status_setup: "SETUP",
                 strat_setup: "Lade Patronen um zu starten.",
-                strat_deadly: "TÖDLICH: Nur scharfe Patronen! Schieß auf den Dealer.",
-                strat_safe: "SICHER: Nur Platzpatronen. Schieß auf dich für Extra-Zug.",
-                strat_high_risk: "Mehr Scharf als Platz. Hohes Risiko -> Dealer.",
-                strat_good_chance: "Mehr Platz als Scharf. Gute Chance für Self-Shot.",
-                strat_equal: "50/50 Chance. Nutze Items (Lupe/Bier) wenn möglich."
+                strat_deadly: "TÖDLICH: Nur noch scharfe Patronen. Schieß auf den Dealer.",
+                strat_safe: "SICHER: Nur noch Platzpatronen. Schieß auf dich für einen Extra-Zug.",
+                strat_known_live: "Aktuelle Patrone ist SCHARF. Schieß auf den Dealer – die Säge verdoppelt den Schaden.",
+                strat_known_blank: "Aktuelle Patrone ist PLATZ. Schieß auf dich für einen Extra-Zug – oder dreh sie mit dem Inverter um und schieß auf den Dealer.",
+                strat_high_risk: "Aktuelle Patrone ist eher SCHARF. Schieß auf den Dealer.",
+                strat_good_chance: "Aktuelle Patrone ist eher PLATZ. Ein Self-Shot kann dir einen Extra-Zug bringen.",
+                strat_equal: "Münzwurf. Nutze die Lupe falls vorhanden – sonst auf den Dealer."
             },
             en: {
                 subtitle: "Probability Calculator",
@@ -253,18 +338,28 @@
                 shot_outcome: "Shot Outcome",
                 analysis: "Analysis",
                 new_round: "New Round",
+                undo: "Undo",
+                magazine: "Magazine",
+                mag_hint: "Tap a shell to mark it as known (Magnifier / Burner Phone)",
+                items: "Items",
+                inverter: "Inverter",
+                inverted: "Inverted",
+                beer_hint: "Also use this after Beer (ejected shell)",
                 msg_empty: "No Ammo!",
+                msg_conflict: "Doesn't fit the counts!",
                 status_safe: "SAFE",
                 status_deadly: "DEADLY",
                 status_danger: "DANGER",
                 status_risky: "RISKY",
                 status_setup: "SETUP",
                 strat_setup: "Load rounds to begin.",
-                strat_deadly: "DEADLY: Only live rounds. Shoot the dealer.",
-                strat_safe: "SAFE: Only blanks. Shoot yourself for a free turn.",
-                strat_high_risk: "More Live than Blank. High risk -> Dealer.",
-                strat_good_chance: "More Blank than Live. Consider shooting yourself.",
-                strat_equal: "50/50 Split. Use items if available."
+                strat_deadly: "DEADLY: Only live rounds left. Shoot the dealer.",
+                strat_safe: "SAFE: Only blanks left. Shoot yourself for a free turn.",
+                strat_known_live: "Current shell is LIVE. Shoot the dealer – the Handsaw doubles the damage.",
+                strat_known_blank: "Current shell is BLANK. Shoot yourself for a free turn – or flip it with the Inverter and shoot the dealer.",
+                strat_high_risk: "Current shell is more likely LIVE. Shoot the dealer.",
+                strat_good_chance: "Current shell is more likely BLANK. Shooting yourself can win you a free turn.",
+                strat_equal: "Coin flip. Use the Magnifier if you have it – otherwise shoot the dealer."
             },
             es: {
                 subtitle: "Calculadora de Probabilidad",
@@ -275,18 +370,28 @@
                 shot_outcome: "Resultado",
                 analysis: "Análisis",
                 new_round: "Nueva Ronda",
+                undo: "Deshacer",
+                magazine: "Cargador",
+                mag_hint: "Toca un cartucho para marcarlo como conocido (Lupa / Teléfono desechable)",
+                items: "Objetos",
+                inverter: "Inversor",
+                inverted: "Invertido",
+                beer_hint: "Úsalo también tras la Cerveza (cartucho expulsado)",
                 msg_empty: "¡Sin munición!",
+                msg_conflict: "¡No cuadra con los números!",
                 status_safe: "SEGURO",
                 status_deadly: "MORTAL",
                 status_danger: "PELIGRO",
                 status_risky: "RIESGO",
                 status_setup: "AJUSTE",
                 strat_setup: "Carga balas para comenzar.",
-                strat_deadly: "MORTAL: Solo balas vivas. Dispara al dealer.",
-                strat_safe: "SEGURO: Solo vacías. Dispárate para turno extra.",
-                strat_high_risk: "Más Vivas que Vacías. Alto riesgo -> Dealer.",
-                strat_good_chance: "Más Vacías que Vivas. Considera dispararte.",
-                strat_equal: "50/50. Usa objetos si es posible."
+                strat_deadly: "MORTAL: Solo quedan vivas. Dispara al dealer.",
+                strat_safe: "SEGURO: Solo quedan vacías. Dispárate para un turno extra.",
+                strat_known_live: "El cartucho actual es VIVO. Dispara al dealer – la Sierra duplica el daño.",
+                strat_known_blank: "El cartucho actual es VACÍO. Dispárate para un turno extra – o inviértelo y dispara al dealer.",
+                strat_high_risk: "El cartucho actual probablemente es VIVO. Dispara al dealer.",
+                strat_good_chance: "El cartucho actual probablemente es VACÍO. Dispararte puede darte un turno extra.",
+                strat_equal: "Cara o cruz. Usa la Lupa si la tienes – si no, dispara al dealer."
             },
             fr: {
                 subtitle: "Calculateur de Probabilité",
@@ -297,18 +402,28 @@
                 shot_outcome: "Résultat",
                 analysis: "Analyse",
                 new_round: "Nouvelle Manche",
+                undo: "Annuler",
+                magazine: "Chargeur",
+                mag_hint: "Touchez une cartouche pour la marquer comme connue (Loupe / Téléphone jetable)",
+                items: "Objets",
+                inverter: "Inverseur",
+                inverted: "Inversée",
+                beer_hint: "Aussi après la Bière (cartouche éjectée)",
                 msg_empty: "Plus de balles!",
+                msg_conflict: "Incohérent avec les chiffres !",
                 status_safe: "SÛR",
                 status_deadly: "MORTEL",
                 status_danger: "DANGER",
                 status_risky: "RISQUE",
                 status_setup: "SETUP",
                 strat_setup: "Chargez pour commencer.",
-                strat_deadly: "MORTEL: Que des réelles. Tirez sur le dealer.",
-                strat_safe: "SÛR: Que des vides. Tirez sur vous.",
-                strat_high_risk: "Plus de réelles. Risque élevé -> Dealer.",
-                strat_good_chance: "Plus de vides. Tirez sur vous ?",
-                strat_equal: "50/50. Utilisez des objets."
+                strat_deadly: "MORTEL : Que des réelles. Tirez sur le dealer.",
+                strat_safe: "SÛR : Que des vides. Tirez sur vous pour un tour bonus.",
+                strat_known_live: "La cartouche actuelle est RÉELLE. Tirez sur le dealer – la Scie double les dégâts.",
+                strat_known_blank: "La cartouche actuelle est VIDE. Tirez sur vous pour un tour bonus – ou inversez-la et tirez sur le dealer.",
+                strat_high_risk: "La cartouche actuelle est plutôt RÉELLE. Tirez sur le dealer.",
+                strat_good_chance: "La cartouche actuelle est plutôt VIDE. Tirer sur vous peut offrir un tour bonus.",
+                strat_equal: "Pile ou face. Utilisez la Loupe si possible – sinon tirez sur le dealer."
             },
             it: {
                 subtitle: "Calcolatore Probabilità",
@@ -319,18 +434,28 @@
                 shot_outcome: "Esito Colpo",
                 analysis: "Analisi",
                 new_round: "Nuovo Round",
+                undo: "Annulla",
+                magazine: "Caricatore",
+                mag_hint: "Tocca una cartuccia per segnarla come nota (Lente / Telefono usa e getta)",
+                items: "Oggetti",
+                inverter: "Invertitore",
+                inverted: "Invertita",
+                beer_hint: "Usalo anche dopo la Birra (cartuccia espulsa)",
                 msg_empty: "Caricatore vuoto!",
+                msg_conflict: "Non torna con i numeri!",
                 status_safe: "SICURO",
                 status_deadly: "MORTALE",
                 status_danger: "PERICOLO",
                 status_risky: "RISCHIO",
                 status_setup: "SETUP",
                 strat_setup: "Carica proiettili per iniziare.",
-                strat_deadly: "MORTALE: Solo vere. Spara al dealer.",
-                strat_safe: "SICURO: Solo a salve. Sparati per turno extra.",
-                strat_high_risk: "Più Vere che Salve. Alto rischio -> Dealer.",
-                strat_good_chance: "Più Salve che Vere. Considera di spararti.",
-                strat_equal: "50/50. Usa oggetti se puoi."
+                strat_deadly: "MORTALE: Solo vere rimaste. Spara al dealer.",
+                strat_safe: "SICURO: Solo a salve. Sparati per un turno extra.",
+                strat_known_live: "La cartuccia attuale è VERA. Spara al dealer – la Sega raddoppia il danno.",
+                strat_known_blank: "La cartuccia attuale è A SALVE. Sparati per un turno extra – o invertila e spara al dealer.",
+                strat_high_risk: "La cartuccia attuale è probabilmente VERA. Spara al dealer.",
+                strat_good_chance: "La cartuccia attuale è probabilmente A SALVE. Spararti può darti un turno extra.",
+                strat_equal: "Testa o croce. Usa la Lente se ce l'hai – altrimenti spara al dealer."
             },
             ru: {
                 subtitle: "Калькулятор Вероятности",
@@ -341,160 +466,321 @@
                 shot_outcome: "Итог Выстрела",
                 analysis: "Анализ",
                 new_round: "Новый Раунд",
+                undo: "Отменить",
+                magazine: "Магазин",
+                mag_hint: "Нажми на патрон, чтобы отметить его известным (Лупа / Одноразовый телефон)",
+                items: "Предметы",
+                inverter: "Инвертор",
+                inverted: "Инвертирован",
+                beer_hint: "Также после Пива (выброшенный патрон)",
                 msg_empty: "Нет патронов!",
+                msg_conflict: "Не сходится с количеством!",
                 status_safe: "БЕЗОПАСНО",
                 status_deadly: "СМЕРТЕЛЬНО",
                 status_danger: "ОПАСНО",
                 status_risky: "РИСК",
                 status_setup: "НАСТРОЙКА",
                 strat_setup: "Зарядите патроны.",
-                strat_deadly: "СМЕРТЕЛЬНО: Только боевые. Стреляй в дилера.",
-                strat_safe: "БЕЗОПАСНО: Только холостые. Стреляй в себя.",
-                strat_high_risk: "Больше боевых. Риск -> Дилер.",
-                strat_good_chance: "Больше холостых. Можно в себя.",
-                strat_equal: "50/50. Используй предметы."
+                strat_deadly: "СМЕРТЕЛЬНО: Остались только боевые. Стреляй в дилера.",
+                strat_safe: "БЕЗОПАСНО: Только холостые. Стреляй в себя ради доп. хода.",
+                strat_known_live: "Текущий патрон БОЕВОЙ. Стреляй в дилера – пила удваивает урон.",
+                strat_known_blank: "Текущий патрон ХОЛОСТОЙ. Стреляй в себя ради доп. хода – или инвертируй и стреляй в дилера.",
+                strat_high_risk: "Текущий патрон скорее БОЕВОЙ. Стреляй в дилера.",
+                strat_good_chance: "Текущий патрон скорее ХОЛОСТОЙ. Выстрел в себя может дать доп. ход.",
+                strat_equal: "50/50. Используй лупу, если есть – иначе стреляй в дилера."
             }
         };
 
-        // --- CACHED DOM ELEMENTS FOR PERFORMANCE ---
-        // ⚡ Bolt: Cache DOM elements to prevent redundant lookups on each render/interaction
-        const DOM_strategyToggle = document.getElementById('strategy-toggle');
-        const DOM_strategyExtras = document.getElementById('strategy-extras');
-        const DOM_ammoWarning = document.getElementById('ammo-warning');
-        const DOM_countLive = document.getElementById('count-live');
-        const DOM_countBlank = document.getElementById('count-blank');
-        const DOM_mainPercent = document.getElementById('main-percent');
-        const DOM_statusText = document.getElementById('status-text');
-        const DOM_statLive = document.getElementById('stat-live');
-        const DOM_statBlank = document.getElementById('stat-blank');
-        const DOM_gaugeArc = document.getElementById('gauge-arc');
-        const DOM_needle = document.getElementById('needle');
-        const DOM_strategyText = document.getElementById('strategy-text');
-        const DOM_indicatorsLive = document.getElementById('indicators-live');
-        const DOM_indicatorsBlank = document.getElementById('indicators-blank');
+        const MAX_SHELLS = 8;
+        const SEGMENTS = 20;
+        const STORAGE_KEY = 'buckshot-calc-v2';
 
-        let currentLang = 'de';
-        let live = 0;
-        let blank = 0;
+        // Display-Farbe je nach Gefahr (Defi-Grün -> Bernstein -> Rot)
+        const PHOS = { setup: '#5f8f68', safe: '#8cff9e', risky: '#ffc857', danger: '#ff5a4e' };
+        // Hüllenfarben für die Mischfarbe unbekannter Patronen
+        const HULL_BLANK = [63, 110, 158];
+        const HULL_LIVE = [184, 50, 42];
+
+        let currentLang = 'en';
+
+        // live/blank = was tatsächlich im Magazin steckt.
+        // known[i] = bekannte Patrone an Position i (0 = aktuelle), null = unbekannt.
+        // inverted = Inverter wurde auf eine UNBEKANNTE aktuelle Patrone benutzt.
+        let state = { live: 0, blank: 0, known: [], inverted: false };
+        let undoStack = [];
 
         function t(key) {
-            return translations[currentLang][key] || key;
+            return translations[currentLang][key] || translations.en[key] || key;
         }
 
+        // --- Wahrscheinlichkeits-Logik ---
+        const opp = type => type === 'live' ? 'blank' : 'live';
+        const total = () => state.live + state.blank;
+        const knownCount = (type, except = -1) =>
+            state.known.filter((k, i) => k === type && i !== except).length;
+
+        // Unbekannte Positionen sind austauschbar -> alle haben dieselbe Chance.
+        function slotProb(i) {
+            const k = state.known[i];
+            if (k) return k === 'live' ? 1 : 0;
+            const unknownTotal = total() - state.known.filter(Boolean).length;
+            if (unknownTotal === 0) return 0;
+            const p = (state.live - knownCount('live')) / unknownTotal;
+            return (i === 0 && state.inverted) ? 1 - p : p;
+        }
+
+        // Empfehlung für den aktuellen Schuss.
+        // Spielregel: Platzpatrone auf dich selbst = du bist nochmal dran,
+        // Platzpatrone auf den Dealer = Zug ist weg. Scharf auf dich = HP weg.
+        function recommend(p) {
+            if (total() === 0) return 'strat_setup';
+            if (state.blank === 0 && !state.inverted) return 'strat_deadly';
+            if (state.live === 0 && !state.inverted) return 'strat_safe';
+            if (p === 1) return 'strat_known_live';
+            if (p === 0) return 'strat_known_blank';
+            if (p > 0.5) return 'strat_high_risk';
+            if (p < 0.5) return 'strat_good_chance';
+            return 'strat_equal';
+        }
+
+        // --- Zustand / Verlauf ---
+        function snapshot() {
+            undoStack.push(JSON.stringify(state));
+            if (undoStack.length > 50) undoStack.shift();
+        }
+
+        function undo() {
+            if (!undoStack.length) return;
+            state = JSON.parse(undoStack.pop());
+            render();
+        }
+
+        function save() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    state, lang: currentLang,
+                    strategy: document.getElementById('strategy-toggle').checked
+                }));
+            } catch (e) { /* Storage nicht verfügbar – egal */ }
+        }
+
+        function load() {
+            try {
+                const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                if (!data) return null;
+                const s = data.state;
+                const valid = s && Number.isInteger(s.live) && Number.isInteger(s.blank)
+                    && Array.isArray(s.known) && s.known.length === s.live + s.blank;
+                if (valid) state = { live: s.live, blank: s.blank, known: s.known, inverted: !!s.inverted };
+                return data;
+            } catch (e) { return null; }
+        }
+
+        // --- Aktionen ---
         function changeLanguage(lang) {
+            if (!translations[lang]) lang = 'en';
             currentLang = lang;
+            document.documentElement.lang = lang;
+            document.getElementById('lang-select').value = lang;
             document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                el.innerText = t(key);
+                el.innerText = t(el.getAttribute('data-i18n'));
             });
             render();
         }
 
         function toggleStrategy() {
-            const isChecked = DOM_strategyToggle.checked;
-            if (isChecked) {
-                DOM_strategyExtras.classList.remove('hidden');
-                DOM_strategyExtras.classList.add('flex');
-            } else {
-                DOM_strategyExtras.classList.add('hidden');
-                DOM_strategyExtras.classList.remove('flex');
-            }
+            const isChecked = document.getElementById('strategy-toggle').checked;
+            const extraCards = document.getElementById('strategy-extras');
+            extraCards.classList.toggle('hidden', !isChecked);
+            extraCards.classList.toggle('flex', isChecked);
+            document.getElementById('advice-line').classList.toggle('hidden', !isChecked);
+            save();
         }
 
         function update(type, change) {
             if (change > 0) {
-                if (live + blank >= 8) return; 
-                if (type === 'live') live++; else blank++;
+                if (total() >= MAX_SHELLS) return;
+                snapshot();
+                state[type]++;
+                state.known.push(null);
             } else {
-                if (type === 'live' && live > 0) live--;
-                else if (type === 'blank' && blank > 0) blank--;
+                if (state[type] === 0) return;
+                snapshot();
+                // Bevorzugt eine unbekannte Position entfernen, sonst eine bekannte dieses Typs
+                let idx = -1;
+                if (state[type] - knownCount(type) > 0) idx = state.known.lastIndexOf(null);
+                if (idx === -1) idx = state.known.lastIndexOf(type);
+                if (idx === 0) state.inverted = false;
+                state.known.splice(idx, 1);
+                state[type]--;
             }
             render();
         }
 
+        // Trägt die Patrone ein, die gerade rausgekommen ist (Schuss oder Bier).
         function shoot(type) {
+            if (total() === 0) return showWarning('msg_empty');
+            // Nach unbekanntem Inverter war die Patrone vorher das Gegenteil
+            const original = state.inverted ? opp(type) : type;
+            if (knownCount(original, 0) >= state[original]) return showWarning('msg_conflict');
+
+            snapshot();
+            state[original]--;
+            state.known.shift();
+            state.inverted = false;
+            render();
+
             if (type === 'live') {
-                if (live > 0) live--; else showWarning();
+                const flash = document.getElementById('flash');
+                flash.classList.remove('go');
+                void flash.offsetWidth;
+                flash.classList.add('go');
+            }
+        }
+
+        function toggleInverter() {
+            if (total() === 0) return showWarning('msg_empty');
+            snapshot();
+            const k = state.known[0];
+            if (k) {
+                // Bekannte Patrone: Ergebnis ist eindeutig
+                state[k]--;
+                state[opp(k)]++;
+                state.known[0] = opp(k);
             } else {
-                if (blank > 0) blank--; else showWarning();
+                state.inverted = !state.inverted;
             }
             render();
         }
 
-        function showWarning() {
-            DOM_ammoWarning.innerText = t('msg_empty');
-            DOM_ammoWarning.classList.remove('hidden');
-            setTimeout(() => DOM_ammoWarning.classList.add('hidden'), 1000);
+        function canMark(i, type) {
+            if (type === null) return true;
+            if (i === 0 && state.inverted) return knownCount(opp(type)) < state[opp(type)];
+            return knownCount(type, i) < state[type];
+        }
+
+        // Unbekannt -> Scharf -> Platz -> Unbekannt (ungültige Stufen werden übersprungen)
+        function cycleSlot(i) {
+            const order = [null, 'live', 'blank'];
+            const start = order.indexOf(state.known[i]);
+            for (let step = 1; step < order.length; step++) {
+                const next = order[(start + step) % order.length];
+                if (!canMark(i, next)) continue;
+                snapshot();
+                if (next && i === 0 && state.inverted) {
+                    // Lupe nach Inverter: jetzt wissen wir, was vorher drin war
+                    state[opp(next)]--;
+                    state[next]++;
+                    state.inverted = false;
+                }
+                state.known[i] = next;
+                render();
+                return;
+            }
+            showWarning('msg_conflict');
+        }
+
+        let warningTimer;
+        function showWarning(key) {
+            const warning = document.getElementById('ammo-warning');
+            document.getElementById('ammo-warning-text').innerText = t(key);
+            warning.classList.remove('hidden');
+            clearTimeout(warningTimer);
+            warningTimer = setTimeout(() => warning.classList.add('hidden'), 1500);
         }
 
         function reset() {
-            live = 0;
-            blank = 0;
+            if (total() === 0 && !state.inverted) return;
+            snapshot();
+            state = { live: 0, blank: 0, known: [], inverted: false };
             render();
         }
 
-        function render() {
-            DOM_countLive.innerText = live;
-            DOM_countBlank.innerText = blank;
-
-            const total = live + blank;
-            const liveProb = total === 0 ? 0 : (live / total) * 100;
-            const blankProb = total === 0 ? 0 : (blank / total) * 100;
-
-            DOM_mainPercent.innerHTML = `${liveProb.toFixed(1)}<span class="text-2xl">%</span>`;
-            DOM_statLive.innerText = `${liveProb.toFixed(1)}%`;
-            DOM_statBlank.innerText = `${blankProb.toFixed(1)}%`;
-
-            let statusKey = "status_safe";
-            let colorClass = "text-emerald-400";
-            let colorHex = "#10b981";
-
-            if (total === 0) {
-                statusKey = "status_setup"; colorClass = "text-zinc-600"; colorHex = "#52525b";
-            } else if (liveProb === 0) {
-                statusKey = "status_safe"; colorClass = "text-emerald-400"; colorHex = "#10b981";
-            } else if (liveProb === 100) {
-                statusKey = "status_deadly"; colorClass = "text-red-600"; colorHex = "#ef4444";
-            } else if (liveProb > 50) {
-                statusKey = "status_danger"; colorClass = "text-red-500"; colorHex = "#ef4444";
-            } else {
-                statusKey = "status_risky"; colorClass = "text-amber-400"; colorHex = "#f59e0b";
-            }
-
-            DOM_mainPercent.className = `text-5xl font-black ${colorClass}`;
-            DOM_statusText.innerText = t(statusKey);
-            DOM_statusText.className = `text-[10px] font-bold uppercase tracking-widest mt-1 ${colorClass}`;
-            
-            DOM_gaugeArc.setAttribute('stroke', colorHex);
-            
-            const rotation = -90 + (liveProb / 100) * 180;
-            DOM_needle.style.transform = `rotate(${rotation}deg)`;
-            
-            const pathLength = 251.2;
-            const offset = pathLength - (pathLength * (liveProb / 100));
-            DOM_gaugeArc.style.strokeDashoffset = offset;
-
-            let stratKey = "strat_setup";
-
-            if(total === 0) stratKey = "strat_setup";
-            else if(liveProb === 100) stratKey = "strat_deadly";
-            else if(liveProb === 0) stratKey = "strat_safe";
-            else if(live > blank) stratKey = "strat_high_risk";
-            else if(blank > live) stratKey = "strat_good_chance";
-            else stratKey = "strat_equal";
-
-            DOM_strategyText.innerText = t(stratKey);
-
-            const makeDots = (cnt, color) => Array(8).fill(0).map((_, i) => 
-                `<div class="w-1.5 h-1.5 rounded-full transition-all ${i < cnt ? color : 'bg-zinc-800/60'}"></div>`
-            ).join('');
-            
-            DOM_indicatorsLive.innerHTML = makeDots(live, 'bg-red-600');
-            DOM_indicatorsBlank.innerHTML = makeDots(blank, 'bg-zinc-500');
+        // --- Darstellung ---
+        function hullColor(p) {
+            const c = HULL_BLANK.map((b, j) => Math.round(b + (HULL_LIVE[j] - b) * p));
+            return `rgb(${c.join(',')})`;
         }
 
+        function renderMagazine() {
+            const n = total();
+            document.getElementById('table-empty').classList.toggle('hidden', n > 0);
+            document.getElementById('mag-hint').classList.toggle('invisible', n === 0);
+
+            document.getElementById('magazine').innerHTML = state.known.map((k, i) => {
+                const p = slotProb(i);
+                const isCurrent = i === 0;
+                const label = k ? t(k) : `${Math.round(p * 100)}%`;
+                const classes = ['shell', k ? 'known' : 'unknown', isCurrent ? 'current' : ''].join(' ');
+                const marker = isCurrent && state.inverted ? '⇄' : i + 1;
+                return `<div class="flex flex-col items-center gap-1.5">
+                    <span class="text-[13px] font-semibold leading-none ${isCurrent ? 'text-[color:var(--brass)]' : 'text-[color:var(--ink-dim)]'}">${marker}</span>
+                    <button type="button" onclick="cycleSlot(${i})" aria-label="#${i + 1}: ${label}"
+                        class="${classes}" style="--hull:${hullColor(p)}">
+                        <span class="hull"></span><span class="base"></span>
+                    </button>
+                    <span class="text-[13px] leading-none tabular-nums ${k ? 'font-bold text-[color:var(--ink)]' : 'text-[color:var(--ink-dim)]'}">${Math.round(p * 100)}%</span>
+                </div>`;
+            }).join('');
+        }
+
+        function render() {
+            document.getElementById('count-live').innerText = state.live;
+            document.getElementById('count-blank').innerText = state.blank;
+
+            const n = total();
+            const liveProb = n === 0 ? 0 : slotProb(0) * 100;
+            const blankProb = n === 0 ? 0 : 100 - liveProb;
+
+            document.getElementById('main-percent').innerText = `${liveProb.toFixed(1)}%`;
+            document.getElementById('stat-live').innerText = `${liveProb.toFixed(1)}%`;
+            document.getElementById('stat-blank').innerText = `${blankProb.toFixed(1)}%`;
+
+            let statusKey, level;
+            if (n === 0) { statusKey = 'status_setup'; level = 'setup'; }
+            else if (liveProb === 0) { statusKey = 'status_safe'; level = 'safe'; }
+            else if (liveProb === 100) { statusKey = 'status_deadly'; level = 'danger'; }
+            else if (liveProb > 50) { statusKey = 'status_danger'; level = 'danger'; }
+            else { statusKey = 'status_risky'; level = 'risky'; }
+
+            const screen = document.getElementById('screen');
+            screen.style.setProperty('--phos', PHOS[level]);
+            document.getElementById('status-text').innerText = t(statusKey);
+
+            const lit = Math.round((liveProb / 100) * SEGMENTS);
+            document.getElementById('segments').innerHTML = Array.from({ length: SEGMENTS }, (_, i) =>
+                `<div class="segment ${i < lit ? 'on' : ''}"></div>`
+            ).join('');
+
+            document.getElementById('inverted-badge').classList.toggle('hidden', !state.inverted);
+            document.getElementById('inverter-btn').classList.toggle('key-on', state.inverted);
+            document.getElementById('undo-btn').disabled = undoStack.length === 0;
+
+            document.getElementById('strategy-text').innerText = t(recommend(liveProb / 100));
+
+            renderMagazine();
+            save();
+        }
+
+        // --- Tastatur ---
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'SELECT' || e.altKey || e.metaKey) return;
+            const key = e.key.toLowerCase();
+            if (key === 'z') { e.preventDefault(); undo(); return; }
+            if (e.ctrlKey) return;
+            if (key === 'l') shoot('live');
+            else if (key === 'b') shoot('blank');
+            else if (key === 'i') toggleInverter();
+        });
+
         // Init
-        changeLanguage('en');
+        const saved = load();
+        if (saved && saved.strategy) {
+            document.getElementById('strategy-toggle').checked = true;
+            toggleStrategy();
+        }
+        const browserLang = (navigator.language || 'en').slice(0, 2);
+        changeLanguage((saved && saved.lang) || (translations[browserLang] ? browserLang : 'en'));
     </script>
 </body>
 </html>
